@@ -1,224 +1,252 @@
 # ACME Package Registry
 
-A command-line tool to evaluate and score Hugging Face models, datasets, and repositories for reuse within the ACME Corporation.  
-Developed as part of **ECE 46100 / CSCI 45000 – Software Engineering (Fall 2025)**.
+A **command-line tool** that evaluates and scores **Hugging Face models** for ACME Corporation using multiple trustworthiness metrics.
+It automates evaluation, generates composite trust scores, and outputs results in **NDJSON** format.
 
 ---
 
-## Collaborators
-- Nathan Allie  
-- Roshen Cherian  
-- Lekhya Sree Akella  
-- Raja Almdar Tariq Ali  
+## Team Members
+
+* **Nathan Allie**
+* **Roshen Cherian**
+* **Lekhya Sree Akella**
+* **Raja Almdar Tariq Ali**
+
+---
+
+## Table of Contents
+
+* [Overview](#overview)
+* [Architecture](#architecture)
+* [Installation](#installation)
+* [Usage](#usage)
+* [Configuration](#configuration)
+* [Metrics System](#metrics-system)
+* [Testing](#testing)
+* [Development](#development)
+* [Troubleshooting](#troubleshooting)
+* [API Reference](#api-reference)
 
 ---
 
 ## Overview
 
-The ACME Package Registry CLI provides a lightweight framework for evaluating the trustworthiness and reusability of machine learning models.  
-It uses metadata from the Hugging Face Hub and Git repositories to compute a *net score* representing documentation quality, code maintainability, and overall project reliability.
+The **ACME Package Registry CLI** provides a standardized and automated approach to evaluate models, codebases, and datasets hosted on the Hugging Face platform.
+It computes multiple quantitative metrics such as **license validity**, **code quality**, **ramp-up time**, **bus factor**, and others to produce an overall **net trust score**.
 
-The tool outputs all results in **NDJSON** format, allowing for automated integration into other pipelines or dashboards.
+### Key Features
 
----
-
-## Features
-
-- Command-line interface with `install`, `test`, and `process` commands  
-- Modular metric system for code, dataset, and documentation evaluation  
-- Parallel metric execution for efficiency  
-- Schema validation and serialization using Pydantic  
-- NDJSON output with reproducible structure  
-- Logging system with configurable path and verbosity  
-- Automated testing with coverage enforcement  
+* CLI with `install`, `test`, and `process` commands
+* Parallelized metric evaluation
+* NDJSON output for structured automation
+* Built-in logging and configurable verbosity
+* Modular design for metric addition or modification
 
 ---
 
-## Project Structure
+## Architecture
+
+### Project Structure
+
 ```
-
 acme-package-registry/
+├── run                        # Typer CLI entrypoint
+├── requirements.txt            # Dependencies list
+├── example_urls.txt            # Sample input file
 ├── src/
-│   ├── orchestrator.py
-│   ├── models.py
-│   ├── hf_api.py
-│   ├── LLM_endpoint.py
-│   ├── logging_config.py
-│   └── metrics/
-│       ├── bus_factor.py
-│       ├── code_quality.py
-│       ├── dataset_code_avail.py
-│       ├── dataset_quality.py
-│       ├── license.py
-│       ├── perf_claims.py
-│       ├── ramp_up.py
-│       └── size.py
-├── tests/
-├── run
-├── requirements.txt
-└── README.md
-
+│   ├── orchestrator.py         # Main parallel execution logic
+│   ├── hf_api.py               # Hugging Face API integration
+│   ├── genai_client.py         # Optional LLM scoring (GenAI)
+│   ├── log_utils.py            # Logging configuration
+│   ├── net_score.py            # Computes composite trust score
+│   ├── models.py               # Defines NDJSON schema (Pydantic)
+│   ├── metrics/                # Metric implementations
+│   │   ├── bus_factor.py
+│   │   ├── code_quality.py
+│   │   ├── dataset_and_code_score.py
+│   │   ├── dataset_quality.py
+│   │   ├── license_metric.py
+│   │   ├── performance_claims.py
+│   │   ├── ramp_up_time.py
+│   │   └── size_score.py
+│   └── tests/                  # Pytest test suite
+│       ├── test_metrics.py
+│       └── test_orchestrator.py
 ```
----
 
-## Metrics
+### Data Flow
 
-Each metric reflects an important aspect of model trustworthiness or usability:
-
-Ramp-Up Time – Measures how quickly an engineer can understand and use the repository.  
-Bus Factor – Analyzes the distribution of Git contributors to assess risk.  
-License – Checks for compatibility with ACME’s open-source policies.  
-Code Quality – Evaluates readability and documentation, optionally assisted by GenAI.  
-Performance Claims – Checks for benchmarking or evaluation statements in the README.  
-Dataset and Code Availability – Detects presence of linked datasets and scripts.  
-Dataset Quality – Evaluates completeness and clarity of dataset metadata.  
-Size Score – Compares model size across various target hardware types.  
+1. The user provides a text file with one or more Hugging Face URLs.
+2. The **orchestrator** runs each metric in parallel and logs execution times.
+3. Each metric produces an independent score `[0,1]`.
+4. The **net_score** module aggregates these into a weighted final trust score.
+5. Results are written to standard output as **NDJSON** entries.
 
 ---
 
 ## Installation
 
-Requirements:  
-• Python 3.11 or higher  
-• Git installed and configured  
+### Prerequisites
 
-Steps:  
-1. Clone the repository:  
-   `git clone https://github.com/Enbeeay/acme-package-registry.git`  
-   `cd acme-package-registry`
+* Python **3.11+**
+* pip (latest stable)
+* Internet connection (for Hugging Face API)
 
-2. (Optional) Create and activate a virtual environment:  
-   `python3.11 -m venv .venv`  
-   `source .venv/bin/activate`
+### Quick Setup
 
-3. Install dependencies:  
-   `./run install`
+```bash
+# Clone and enter the repository
+git clone https://github.com/Enbeeay/acme-package-registry.git
+cd acme-package-registry
+
+# Install dependencies
+./run install
+
+# Verify installation
+./run test
+```
+
+### Manual Setup
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
 ---
 
 ## Usage
 
-To evaluate models from a list of URLs:  
-`./run process example_urls.txt`
+### Commands
 
-Example Output:
+| Command                    | Description                                            |
+| -------------------------- | ------------------------------------------------------ |
+| `./run install`            | Installs all dependencies listed in `requirements.txt` |
+| `./run test`               | Runs automated tests with coverage tracking            |
+| `./run process <url_file>` | Evaluates all URLs from a text file and outputs NDJSON |
+
+### Example
+
+```bash
+./run process example_urls.txt
 ```
 
-{
-"name": "bert-base-uncased",
-"category": "MODEL",
-"net_score": 0.8042,
-"bus_factor": 0.4485,
-"license": 1.0,
-"code_quality": 0.5,
-"dataset_and_code_score": 1.0,
-"dataset_quality": 1.0
-}
+#### Sample Output
 
+```json
+{"name":"bert-base-uncased","category":"MODEL","net_score":0.8042,"ramp_up_time":0.7594,"bus_factor":0.4485,"performance_claims":1.0,"license":1.0,"dataset_quality":1.0,"code_quality":0.5}
 ```
-
-Other commands:  
-• `./run install` – Install dependencies  
-• `./run test` – Run all tests with coverage  
-• `./run --help` – Show available commands  
 
 ---
 
 ## Configuration
 
-The software is configured primarily through environment variables, which can be changed at runtime without modifying code.
+The system supports runtime configuration via **environment variables**:
 
-GENAI_API_URL – Endpoint for Purdue GenAI Studio (default: https://genai.rcac.purdue.edu/api/chat/completions)  
-GEN_AI_STUDIO_API_KEY / GENAI_STUDIO_API_KEY – API key for GenAI access  
-LOG_FILE – Log file path (default: acme.log)  
-LOG_LEVEL – Logging verbosity (0 = Critical, 1 = Info, 2 = Debug)  
+| Variable                                         | Description                                 | Default                                              |
+| ------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------- |
+| `GENAI_API_URL`                                  | Purdue GenAI endpoint for LLM scoring       | `https://genai.rcac.purdue.edu/api/chat/completions` |
+| `GEN_AI_STUDIO_API_KEY` / `GENAI_STUDIO_API_KEY` | API key for GenAI integration               | None                                                 |
+| `LOG_FILE`                                       | File path for logs                          | `acme.log`                                           |
+| `LOG_LEVEL`                                      | Verbosity level (0=silent, 1=info, 2=debug) | `0`                                                  |
 
-Example:  
-```
-
-export LOG_FILE="./logs/acme_debug.log"
-export LOG_LEVEL=2
-./run process example_urls.txt
-
-```
+The logger (`log_utils.py`) validates directory paths and raises an error if invalid, ensuring consistent automated grading behavior.
 
 ---
 
-## Building
+## Metrics System
 
-The CLI does not require compilation.  
-To set up the environment and build a runnable installation:
+Each metric returns a score between 0 and 1 and executes in parallel for efficiency.
 
-1. Create a Python virtual environment  
-2. Run `./run install` to install dependencies  
+| Metric                     | Description                                                    | Data Source                         |
+| -------------------------- | -------------------------------------------------------------- | ----------------------------------- |
+| **license**                | Validates license information from the Hugging Face model card | `hf_api.py`                         |
+| **ramp_up_time**           | Evaluates documentation completeness                           | `metrics/ramp_up_time.py`           |
+| **bus_factor**             | Measures number and diversity of contributors                  | `metrics/bus_factor.py`             |
+| **performance_claims**     | Checks for explicit benchmark results                          | `metrics/performance_claims.py`     |
+| **dataset_and_code_score** | Evaluates linked dataset/code availability                     | `metrics/dataset_and_code_score.py` |
+| **dataset_quality**        | Measures dataset maintenance and quality                       | `metrics/dataset_quality.py`        |
+| **code_quality**           | Analyzes readability, style, and structure                     | `metrics/code_quality.py`           |
+| **size_score**             | Estimates deployability across devices                         | `metrics/size_score.py`             |
 
-The `./run` script manages dependency installation, testing, and processing, ensuring reproducibility across systems.
+The final `net_score.py` script aggregates these metrics into a composite trust score.
 
 ---
 
 ## Testing
 
-Testing is automated using pytest with coverage measurement.  
-To execute all tests, run:
-```
+Tests are implemented with **pytest** and **pytest-cov**, located under `src/tests/`.
 
+### Running Tests
+
+```bash
 ./run test
-
 ```
 
-Test types include:  
-• Unit tests for individual metric modules  
-• Integration tests for orchestrator and NDJSON output  
-• Manual validation for invalid URLs and logging behavior  
+The suite includes:
 
-All tests target ≥80% line coverage as per the specification.
+* Unit tests for individual metrics
+* Integration tests for orchestrator behavior
+* CLI-level tests for end-to-end validation
 
----
-
-## Logging
-
-Logging is handled by `src/logging_config.py`.  
-It supports the following environment variables:
-
-LOG_FILE – Path to write logs  
-LOG_LEVEL – Numeric verbosity level  
-
-A critical level (0) creates an empty log file, while levels 1 and 2 add informational and debug details respectively.  
-Invalid file paths terminate execution immediately, ensuring controlled error handling.
+Target coverage: **≥80% line coverage** across all modules.
 
 ---
 
-## Version Control
+## Development
 
-The project uses Git and is hosted publicly at:  
-https://github.com/Enbeeay/acme-package-registry  
+### Tooling
 
-Branching follows a feature-branch workflow:  
-• main is stable and protected.  
-• Each feature or bug fix occurs on its own branch (feature/<name>).  
-• Pull Requests are reviewed before merging.  
-• Version tags (v1.0, v1.1, etc.) mark release milestones.  
+| Tool                    | Purpose              |
+| ----------------------- | -------------------- |
+| **black**               | Code formatting      |
+| **isort**               | Import sorting       |
+| **flake8**              | Linting              |
+| **mypy**                | Type checking        |
+| **pytest / pytest-cov** | Testing and coverage |
 
----
+### Branching & Versioning
 
-## Dependencies
-
-Typer [all] – Command-line interface and argument parsing.  
-Pydantic – Schema definition and output validation.  
-huggingface_hub – Fetches model and dataset metadata.  
-GitPython – Extracts repository and contributor data.  
-pytest, pytest-cov – Automated testing and coverage tracking.  
-black, isort, flake8, mypy – Code formatting, linting, and type checking.  
-validators – Validates URL structure and prevents malformed inputs.  
-
-All dependencies are installed via:  
-`./run install`
+* **main** – Stable branch
+* **feature/** branches – For feature work or bug fixes
+* Tags like `v1.0`, `v1.1` can mark deliverables or releases
+* GitHub Actions CI planned for automated lint/test enforcement
 
 ---
 
-## Acknowledgment
+## Troubleshooting
 
-Developed as part of the coursework for  
-ECE 46100 / CSCI 45000 – Software Engineering  
-Purdue University, Fall 2025.
+| Issue                        | Cause                         | Resolution                                    |
+| ---------------------------- | ----------------------------- | --------------------------------------------- |
+| `Invalid log file directory` | `LOG_FILE` path doesn’t exist | Provide a valid directory path                |
+| `requests` not found         | Missing dependency            | Run `./run install`                           |
+| API scoring skipped          | No GenAI API key              | Export `GENAI_STUDIO_API_KEY`                 |
+| CLI error “No such command”  | Missing subcommand            | Use `./run process <file>` not `./run <file>` |
+
+---
+
+## API Reference
+
+### `setup_logging()`
+
+Configures log file and verbosity.
+Raises `SystemExit` if the path is invalid.
+
+### `score_with_llm(task, readme, context, model=None)`
+
+Calls Purdue GenAI API (if available) to produce 0–1 score.
+Returns `None` when unavailable.
+
+### `orchestrator.run_parallel_metrics()`
+
+Handles concurrent metric execution and aggregation.
+
+---
+
+## License
+
+This project was created for **ECE 46100 / CSCI 45000 – Software Engineering** (Fall 2025).
+All dependencies used are open-source and listed in `requirements.txt`.
+
 
