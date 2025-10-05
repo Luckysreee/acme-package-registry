@@ -69,9 +69,15 @@ acme-package-registry/
 │   │   ├── performance_claims.py
 │   │   ├── ramp_up_time.py
 │   │   └── size_score.py
-│   └── tests/                  # Pytest test suite
-│       ├── test_metrics.py
-│       └── test_orchestrator.py
+│   ├── tests/                  # Pytest test suite
+│   │   ├── test_metrics.py
+│   │   ├── test_orchestrator.py
+│   │   └── ...
+│   └── helpers/
+│   │   ├── utils.py
+│   │   └── __init__.py
+└── README.md
+
 ```
 
 ### Data Flow
